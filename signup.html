@@ -27,48 +27,35 @@
         .input-group { position: relative; margin-bottom: 15px; text-align: left; }
         
         input {
-            width: 100%; padding: 12px 15px; background: rgba(255,255,255,0.05);
+            width: 100%; padding: 14px 15px; background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
             color: white; outline: none; transition: 0.3s; font-size: 16px;
         }
 
         input:focus { border-color: var(--primary); background: rgba(255,255,255,0.1); }
 
-        /* Inline Send Buttons */
-        .inline-btn {
-            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-            background: var(--primary); color: #000; border: none; padding: 6px 12px;
-            border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer;
-            transition: 0.2s;
-        }
-        .inline-btn:active { transform: translateY(-50%) scale(0.9); }
-
-        /* Eye Icon Styling */
         .eye-icon {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
             cursor: pointer; color: var(--primary); display: flex; align-items: center;
         }
 
-        #user-status { font-size: 0.7rem; margin-top: 4px; display: none; min-height: 15px; }
+        #user-status { font-size: 0.7rem; margin-top: 4px; display: none; min-height: 15px; font-weight: 600; }
 
         .btn-primary {
             width: 100%; padding: 15px; background: linear-gradient(45deg, var(--primary), #4facfe);
             border: none; border-radius: 12px; color: #000; font-weight: 800;
-            cursor: pointer; transition: 0.3s; margin-top: 15px; text-transform: uppercase;
+            cursor: pointer; transition: 0.3s; margin-top: 10px; text-transform: uppercase;
             box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
         }
 
         .btn-primary:active { transform: scale(0.96); }
-
-        .otp-label { font-size: 0.75rem; color: var(--primary); margin-bottom: 8px; display: block; opacity: 0.8; font-weight: 600; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div id="recaptcha-container"></div>
-
     <div class="signup-card">
-        <h2>Create Account</h2>
+        <h2>Join ChatUp</h2>
         
         <div class="input-group">
             <input type="text" id="public-name" placeholder="Public Name (Display Name)">
@@ -82,42 +69,33 @@
 
         <div class="input-group">
             <input type="email" id="email" placeholder="Email Address">
-            <button class="inline-btn" onclick="sendOTP('email')">SEND</button>
         </div>
 
         <div class="input-group">
             <input type="tel" id="mobile" placeholder="Mobile Number" maxlength="10" 
             oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-            <button class="inline-btn" id="send-otp-btn" onclick="sendOTP('mobile')">SEND</button>
         </div>
 
         <div class="input-group">
-            <input type="password" id="password" placeholder="Password (Min 6 chars)">
+            <input type="password" id="password" placeholder="Create Password">
             <div class="eye-icon" onclick="togglePass()">
                 <svg id="eye-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </div>
         </div>
 
-        <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <label class="otp-label">VERIFICATION CODE</label>
-            <div class="input-group">
-                <input type="text" id="otp-input" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 5px; font-weight: 800;">
-            </div>
-            <button class="btn-primary" onclick="finalSignup()">Create Account</button>
-        </div>
+        <button class="btn-primary" id="signup-btn" onclick="directSignup()">Create Account</button>
 
         <p style="margin-top: 20px; font-size: 0.85rem; opacity: 0.5;">Already have an account? <a href="login.html" style="color: var(--primary); text-decoration: none;">Login</a></p>
     </div>
 
     <script type="module">
         import { db, auth } from './firebase-config.js';
-        import { RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { collection, query, where, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let isUsernameValid = false;
-        let confirmationResult = null;
 
-        // --- 1. Toggle Password Visibility ---
+        // --- 1. Toggle Password ---
         window.togglePass = () => {
             const passInput = document.getElementById('password');
             passInput.type = passInput.type === 'password' ? 'text' : 'password';
@@ -127,71 +105,69 @@
         window.handleUsernameCheck = async (username) => {
             const status = document.getElementById('user-status');
             if(username.length < 3) { status.style.display='none'; isUsernameValid=false; return; }
-            status.style.display = 'block'; status.innerText = "Checking...";
+            
+            status.style.display = 'block'; 
+            status.innerText = "Checking...";
             status.style.color = "#aaa";
             
-            const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-            const snap = await getDocs(q);
-            if(!snap.empty) { 
-                status.innerText = "Taken ❌"; status.style.color = "#ff4b2b"; isUsernameValid=false; 
-            } else { 
-                status.innerText = "Available ✅"; status.style.color = "#00ff88"; isUsernameValid=true; 
-            }
-        };
-
-        // --- 3. Real OTP Send Logic ---
-        window.sendOTP = async (type) => {
-            if(type === 'email') { alert("Email verification link sent! (Simulated)"); return; }
-            
-            const mobile = document.getElementById('mobile').value;
-            if(mobile.length !== 10) { alert("Sahi 10-digit number dalo!"); return; }
-            if(!isUsernameValid) { alert("Unique username choose karo pehle!"); return; }
-
             try {
-                if(!window.recaptchaVerifier) {
-                    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
+                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                const snap = await getDocs(q);
+                if(!snap.empty) { 
+                    status.innerText = "Username taken ❌"; status.style.color = "#ff4b2b"; isUsernameValid=false; 
+                } else { 
+                    status.innerText = "Available ✅"; status.style.color = "#00ff88"; isUsernameValid=true; 
                 }
-                const phoneNumber = "+91" + mobile;
-                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-                alert("OTP SMS bhej diya gaya hai!");
-            } catch (err) {
-                console.error(err);
-                alert("OTP send fail! Check Firebase Console settings.");
-            }
+            } catch (e) { console.error(e); }
         };
 
-        // --- 4. Final Verification & Database Save ---
-        window.finalSignup = async () => {
-            const otp = document.getElementById('otp-input').value;
-            const uName = document.getElementById('username').value.toLowerCase();
-            const pName = document.getElementById('public-name').value;
+        // --- 3. Direct Signup Logic ---
+        window.directSignup = async () => {
+            const btn = document.getElementById('signup-btn');
+            const pName = document.getElementById('public-name').value.trim();
+            const uName = document.getElementById('username').value.trim().toLowerCase();
+            const email = document.getElementById('email').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const pass = document.getElementById('password').value;
 
-            if(otp.length !== 6) { alert("6-digit OTP dalo!"); return; }
+            // Basic Validations
+            if(!isUsernameValid) { alert("Please choose a unique username!"); return; }
+            if(!pName || !email || mobile.length !== 10 || pass.length < 6) { 
+                alert("Please fill all details correctly! (Password min 6 chars)"); 
+                return; 
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Creating Account...";
 
             try {
-                const result = await confirmationResult.confirm(otp);
-                const user = result.user;
+                // Firebase Auth Create User
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
 
-                // Save to Firestore
+                // Save Extra Details to Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
-                    username: uName,
                     publicName: pName,
-                    mobile: document.getElementById('mobile').value,
-                    email: document.getElementById('email').value,
+                    username: uName,
+                    email: email,
+                    mobile: mobile,
                     createdAt: new Date()
                 });
 
-                alert("Account created! Redirecting...");
+                alert("Account created successfully!");
                 location.href = 'dashboard.html';
-            } catch (err) {
-                alert("Invalid OTP! Try again.");
+
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerText = "Create Account";
+                alert("Error: " + error.message);
             }
         };
 
-        // Enter Key Support
+        // Keyboard Support
         document.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') finalSignup();
+            if(e.key === 'Enter') directSignup();
         });
     </script>
 </body>
