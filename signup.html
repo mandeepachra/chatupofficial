@@ -19,7 +19,7 @@
         .signup-card {
             width: 100%; max-width: 400px; background: var(--glass);
             padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(25px); text-align: center;
+            backdrop-filter: blur(25px); text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
         h2 { margin-bottom: 25px; font-weight: 800; letter-spacing: 1px; color: var(--primary); text-transform: uppercase; }
@@ -36,44 +36,46 @@
 
         /* Inline Send Buttons */
         .inline-btn {
-            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-            background: var(--primary); color: #000; border: none; padding: 5px 12px;
-            border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: var(--primary); color: #000; border: none; padding: 6px 12px;
+            border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer;
+            transition: 0.2s;
         }
+        .inline-btn:active { transform: translateY(-50%) scale(0.9); }
 
-        /* Password Eye Styling */
+        /* Eye Icon Styling */
         .eye-icon {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            cursor: pointer; color: var(--primary); /* UI Color Set */
-            display: flex; align-items: center;
+            cursor: pointer; color: var(--primary); display: flex; align-items: center;
         }
 
-        #user-status { font-size: 0.7rem; margin-top: 4px; display: none; }
+        #user-status { font-size: 0.7rem; margin-top: 4px; display: none; min-height: 15px; }
 
         .btn-primary {
-            width: 100%; padding: 14px; background: linear-gradient(45deg, var(--primary), #4facfe);
+            width: 100%; padding: 15px; background: linear-gradient(45deg, var(--primary), #4facfe);
             border: none; border-radius: 12px; color: #000; font-weight: 800;
-            cursor: pointer; transition: 0.3s; margin-top: 20px; text-transform: uppercase;
+            cursor: pointer; transition: 0.3s; margin-top: 15px; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
         }
 
         .btn-primary:active { transform: scale(0.96); }
 
-        .otp-section {
-            margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);
-        }
+        .otp-label { font-size: 0.75rem; color: var(--primary); margin-bottom: 8px; display: block; opacity: 0.8; font-weight: 600; }
     </style>
 </head>
 <body>
+
+    <div id="recaptcha-container"></div>
 
     <div class="signup-card">
         <h2>Create Account</h2>
         
         <div class="input-group">
-            <input type="text" id="public-name" placeholder="Public Name">
+            <input type="text" id="public-name" placeholder="Public Name (Display Name)">
         </div>
 
         <div class="input-group">
-            <input type="text" id="username" placeholder="Username" 
+            <input type="text" id="username" placeholder="Username (Unique)" 
             oninput="this.value = this.value.replace(/[^a-z0-9_]/g, ''); handleUsernameCheck(this.value)">
             <div id="user-status">Checking...</div>
         </div>
@@ -86,21 +88,22 @@
         <div class="input-group">
             <input type="tel" id="mobile" placeholder="Mobile Number" maxlength="10" 
             oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-            <button class="inline-btn" onclick="sendOTP('mobile')">SEND</button>
+            <button class="inline-btn" id="send-otp-btn" onclick="sendOTP('mobile')">SEND</button>
         </div>
 
         <div class="input-group">
-            <input type="password" id="password" placeholder="Create Password">
+            <input type="password" id="password" placeholder="Password (Min 6 chars)">
             <div class="eye-icon" onclick="togglePass()">
                 <svg id="eye-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </div>
         </div>
 
-        <div class="otp-section">
+        <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <label class="otp-label">VERIFICATION CODE</label>
             <div class="input-group">
-                <input type="text" id="otp-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="text-align: center; letter-spacing: 4px;">
+                <input type="text" id="otp-input" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 5px; font-weight: 800;">
             </div>
-            <button class="btn-primary" onclick="validateAndSignup()">Create Account</button>
+            <button class="btn-primary" onclick="finalSignup()">Create Account</button>
         </div>
 
         <p style="margin-top: 20px; font-size: 0.85rem; opacity: 0.5;">Already have an account? <a href="login.html" style="color: var(--primary); text-decoration: none;">Login</a></p>
@@ -108,46 +111,87 @@
 
     <script type="module">
         import { db, auth } from './firebase-config.js';
-        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, query, where, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Toggle Password Visibility
+        let isUsernameValid = false;
+        let confirmationResult = null;
+
+        // --- 1. Toggle Password Visibility ---
         window.togglePass = () => {
             const passInput = document.getElementById('password');
             passInput.type = passInput.type === 'password' ? 'text' : 'password';
         };
 
-        // Unique Username Logic
+        // --- 2. Username Availability Check ---
         window.handleUsernameCheck = async (username) => {
             const status = document.getElementById('user-status');
-            if(username.length < 3) { status.style.display='none'; return; }
+            if(username.length < 3) { status.style.display='none'; isUsernameValid=false; return; }
             status.style.display = 'block'; status.innerText = "Checking...";
+            status.style.color = "#aaa";
+            
             const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
             const snap = await getDocs(q);
-            if(!snap.empty) { status.innerText = "Taken ❌"; status.style.color = "#ff4b2b"; }
-            else { status.innerText = "Available ✅"; status.style.color = "#00ff88"; }
-        };
-
-        // OTP Send Placeholder
-        window.sendOTP = (type) => {
-            const val = type === 'email' ? document.getElementById('email').value : document.getElementById('mobile').value;
-            if(!val) { alert(`Please enter ${type}`); return; }
-            alert(`OTP Sent to your ${type}!`);
-        };
-
-        // Final Signup Process
-        window.validateAndSignup = () => {
-            const otp = document.getElementById('otp-input').value;
-            if(otp.length === 6) {
-                alert("Account Created! Welcome to ChatUp.");
-                location.href = 'dashboard.html';
-            } else {
-                alert("Please enter valid 6-digit OTP");
+            if(!snap.empty) { 
+                status.innerText = "Taken ❌"; status.style.color = "#ff4b2b"; isUsernameValid=false; 
+            } else { 
+                status.innerText = "Available ✅"; status.style.color = "#00ff88"; isUsernameValid=true; 
             }
         };
 
-        // Keyboard Enter Support
+        // --- 3. Real OTP Send Logic ---
+        window.sendOTP = async (type) => {
+            if(type === 'email') { alert("Email verification link sent! (Simulated)"); return; }
+            
+            const mobile = document.getElementById('mobile').value;
+            if(mobile.length !== 10) { alert("Sahi 10-digit number dalo!"); return; }
+            if(!isUsernameValid) { alert("Unique username choose karo pehle!"); return; }
+
+            try {
+                if(!window.recaptchaVerifier) {
+                    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
+                }
+                const phoneNumber = "+91" + mobile;
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+                alert("OTP SMS bhej diya gaya hai!");
+            } catch (err) {
+                console.error(err);
+                alert("OTP send fail! Check Firebase Console settings.");
+            }
+        };
+
+        // --- 4. Final Verification & Database Save ---
+        window.finalSignup = async () => {
+            const otp = document.getElementById('otp-input').value;
+            const uName = document.getElementById('username').value.toLowerCase();
+            const pName = document.getElementById('public-name').value;
+
+            if(otp.length !== 6) { alert("6-digit OTP dalo!"); return; }
+
+            try {
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
+
+                // Save to Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    username: uName,
+                    publicName: pName,
+                    mobile: document.getElementById('mobile').value,
+                    email: document.getElementById('email').value,
+                    createdAt: new Date()
+                });
+
+                alert("Account created! Redirecting...");
+                location.href = 'dashboard.html';
+            } catch (err) {
+                alert("Invalid OTP! Try again.");
+            }
+        };
+
+        // Enter Key Support
         document.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') validateAndSignup();
+            if(e.key === 'Enter') finalSignup();
         });
     </script>
 </body>
