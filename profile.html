@@ -15,137 +15,128 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-dark); color: white; min-height: 100vh; padding-bottom: 100px; overflow-x: hidden; }
 
-        /* --- LOADER & MODALS --- */
+        /* --- LOADER --- */
         #action-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; display: none; justify-content: center; align-items: center; }
         .loader-backdrop { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); }
-        .loader-box { position: relative; background: var(--glass); padding: 30px; border-radius: 25px; border: 1px solid var(--border); text-align: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- PROFILE UI --- */
+        /* --- UI ELEMENTS --- */
+        .clickable { transition: 0.2s; cursor: pointer; }
+        .clickable:active { transform: scale(0.95); }
+
         #profile-content { padding: 25px 20px; }
         .profile-header { text-align: center; margin-bottom: 30px; }
-        .pic-wrapper { position: relative; width: 110px; height: 110px; margin: 0 auto 15px; cursor: pointer; }
-        #display-pic { width: 100%; height: 100%; border-radius: 50%; border: 3.5px solid var(--primary); background: var(--bg-dark); overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0, 242, 254, 0.2); }
-        #user-photo { width: 100%; height: 100%; object-fit: cover; }
-        .edit-badge { position: absolute; bottom: 5px; right: 5px; background: var(--primary); width: 32px; height: 32px; border-radius: 50%; color: #000; display: flex; justify-content: center; align-items: center; border: 3px solid var(--bg-dark); }
+        .pic-wrapper { position: relative; width: 110px; height: 110px; margin: 0 auto 15px; }
+        #display-pic { width: 100%; height: 100%; border-radius: 50%; border: 3.5px solid var(--primary); padding: 4px; background: var(--bg-dark); display: flex; justify-content: center; align-items: center; overflow: hidden; box-shadow: 0 0 20px rgba(0, 242, 254, 0.2); }
+        #user-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .edit-badge { position: absolute; bottom: 5px; right: 5px; background: var(--primary); width: 32px; height: 32px; border-radius: 50%; color: #000; display: flex; justify-content: center; align-items: center; border: 3.5px solid var(--bg-dark); font-size: 14px; }
 
-        .details-card { background: var(--glass); border: 1px solid var(--border); border-radius: 25px; padding: 10px 20px; margin-bottom: 20px; }
+        .details-card { background: var(--glass); border: 1px solid var(--border); border-radius: 25px; padding: 10px 20px; margin-bottom: 25px; backdrop-filter: blur(20px); }
         .info-row { padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .label { font-size: 0.65rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
-        .value { font-size: 1rem; font-weight: 500; color: #fff; }
+        .info-row:last-child { border-bottom: none; }
+        .label { font-size: 0.65rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+        .value { font-size: 1rem; font-weight: 500; }
 
-        .action-btn { background: var(--primary); color: #000; padding: 16px; border-radius: 18px; text-align: center; font-weight: 800; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .action-btn:active { transform: scale(0.95); }
+        .action-btn { background: var(--primary); color: #000; padding: 16px; border-radius: 18px; text-align: center; font-weight: 800; font-size: 0.95rem; margin-top: 10px; border: none; width: 100%; }
 
         /* --- EDIT MODAL --- */
-        #edit-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .modal-box { position: relative; width: 100%; max-width: 400px; background: #0c0c10; border: 1px solid var(--border); border-radius: 30px; padding: 30px; }
+        #edit-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+        .modal-box { width: 100%; max-width: 400px; background: #0c0c10; border: 1px solid var(--border); border-radius: 30px; padding: 30px; }
         .input-group { margin-bottom: 18px; }
-        .input-group label { display: block; font-size: 0.7rem; color: var(--primary); margin-bottom: 6px; font-weight: 700; }
-        .input-group input, .input-group textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: white; outline: none; }
+        .input-group label { display: block; font-size: 0.7rem; color: var(--primary); margin-bottom: 6px; font-weight: 600; }
+        .input-group input, .input-group textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 14px; padding: 14px; color: white; outline: none; font-size: 1rem; }
     </style>
 </head>
 <body>
 
     <div id="action-loader">
         <div class="loader-backdrop"></div>
-        <div class="loader-box"><div class="spinner"></div><p id="loader-msg">Syncing...</p></div>
+        <div class="spinner"></div>
     </div>
 
     <div id="edit-modal">
-        <div class="loader-backdrop" onclick="closeEdit()"></div>
         <div class="modal-box">
-            <h3 style="margin-bottom: 20px; color: var(--primary);">Edit Profile</h3>
-            <div class="input-group"><label>NAME</label><input type="text" id="edit-name"></div>
-            <div class="input-group"><label>USERNAME</label><input type="text" id="edit-username"></div>
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Edit Profile Details</h3>
+            <div class="input-group"><label>PUBLIC NAME</label><input type="text" id="edit-name"></div>
+            <div class="input-group"><label>USERNAME</label><input type="text" id="edit-user"></div>
             <div class="input-group"><label>BIO</label><textarea id="edit-bio" rows="2"></textarea></div>
-            <div style="display:flex; gap:10px;">
-                <button class="action-btn" style="flex:1; background:rgba(255,255,255,0.1); color:#fff;" onclick="closeEdit()">Cancel</button>
-                <button class="action-btn" style="flex:1;" onclick="saveProfileChanges()">Save</button>
+            <div style="display:flex; gap:12px;">
+                <div class="action-btn clickable" style="background:rgba(255,255,255,0.1); color:#fff;" onclick="closeEdit()">Cancel</div>
+                <div class="action-btn clickable" onclick="saveDetails()">Save</div>
             </div>
         </div>
     </div>
 
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+
     <div id="profile-content">
         <div class="profile-header">
-            <div class="pic-wrapper" onclick="document.getElementById('fileInput').click()">
+            <div class="pic-wrapper clickable" onclick="document.getElementById('fileInput').click()">
                 <div id="display-pic">
                     <img id="user-photo" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 </div>
                 <div class="edit-badge">📷</div>
             </div>
-            <input type="file" id="fileInput" style="display:none" accept="image/*">
         </div>
 
         <div class="details-card">
-            <div class="info-row"><p class="label">Public Name</p><p class="value" id="val-name">---</p></div>
-            <div class="info-row"><p class="label">Username</p><p class="value" id="val-user">@---</p></div>
-            <div class="info-row"><p class="label">Bio</p><p class="value" id="val-bio">---</p></div>
+            <div class="info-row"><p class="label">Public Name</p><p class="value" id="val-name">Mandeep</p></div>
+            <div class="info-row"><p class="label">Username</p><p class="value" id="val-user">@mandeep_01</p></div>
+            <div class="info-row"><p class="label">Bio</p><p class="value" id="val-bio">Chat Up With Your Friends</p></div>
         </div>
 
-        <div class="action-btn" onclick="openEditModal()">Edit Profile Details</div>
-        <div class="action-btn" onclick="location.href='dashboard.html'" style="background:transparent; color:#fff; border:1px solid var(--border);">Back to Dashboard</div>
+        <button class="action-btn clickable" onclick="openEdit()">Edit Profile Details</button>
+        <button class="action-btn clickable" onclick="window.location.href='./dashboard.html'" style="background:transparent; color:#fff; border:1px solid var(--border);">Back to Dashboard</button>
+        <button class="action-btn clickable" onclick="logoutUser()" style="background:rgba(255,75,43,0.1); color:#ff4b2b; border:1px solid rgba(255,75,43,0.2); margin-top:20px;">Logout Account</button>
     </div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
         import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-        // Initial Local Load (Fast UI)
-        if(localStorage.getItem('chatup_name')) {
-            document.getElementById('val-name').innerText = localStorage.getItem('chatup_name');
-            document.getElementById('val-user').innerText = "@" + localStorage.getItem('chatup_user');
-            document.getElementById('val-bio').innerText = localStorage.getItem('chatup_bio');
-            if(localStorage.getItem('chatup_pic')) document.getElementById('user-photo').src = localStorage.getItem('chatup_pic');
-        }
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const snap = await getDoc(doc(db, "users", user.uid));
                 if (snap.exists()) {
                     const d = snap.data();
-                    // Update LocalStorage & UI
-                    localStorage.setItem('chatup_name', d.publicName);
-                    localStorage.setItem('chatup_user', d.username);
-                    localStorage.setItem('chatup_bio', d.bio || "Chat Up With Your Friends");
-                    if(d.profilePic) localStorage.setItem('chatup_pic', d.profilePic);
-                    
-                    document.getElementById('val-name').innerText = d.publicName;
-                    document.getElementById('val-user').innerText = "@" + d.username;
+                    document.getElementById('val-name').innerText = d.publicName || "Mandeep";
+                    document.getElementById('val-user').innerText = "@" + (d.username || "user");
                     document.getElementById('val-bio').innerText = d.bio || "Chat Up With Your Friends";
                     if(d.profilePic) document.getElementById('user-photo').src = d.profilePic;
                 }
-            } else { location.href = 'login.html'; }
+            } else { 
+                window.location.replace('./login.html'); 
+            }
         });
 
-        window.openEditModal = () => {
+        window.logoutUser = () => {
+            signOut(auth).then(() => {
+                window.location.replace('./login.html');
+            }).catch((error) => alert("Logout Failed!"));
+        };
+
+        window.openEdit = () => {
             document.getElementById('edit-name').value = document.getElementById('val-name').innerText;
-            document.getElementById('edit-username').value = document.getElementById('val-user').innerText.replace('@','');
+            document.getElementById('edit-user').value = document.getElementById('val-user').innerText.replace('@','');
             document.getElementById('edit-bio').value = document.getElementById('val-bio').innerText;
             document.getElementById('edit-modal').style.display = 'flex';
         };
 
         window.closeEdit = () => { document.getElementById('edit-modal').style.display = 'none'; };
 
-        window.saveProfileChanges = async () => {
+        window.saveDetails = async () => {
             const n = document.getElementById('edit-name').value;
-            const u = document.getElementById('edit-username').value;
+            const u = document.getElementById('edit-user').value;
             const b = document.getElementById('edit-bio').value;
-            
             document.getElementById('action-loader').style.display = 'flex';
             try {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    publicName: n,
-                    username: u,
-                    bio: b
-                });
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { publicName: n, username: u, bio: b });
                 location.reload();
-            } catch (err) { alert("Error updating!"); }
+            } catch (e) { alert("Error!"); document.getElementById('action-loader').style.display = 'none'; }
         };
 
-        // File Upload (Cloudinary)
         document.getElementById('fileInput').onchange = async (e) => {
             const file = e.target.files[0];
             if(!file) return;
@@ -158,7 +149,7 @@
                 const data = await res.json();
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { profilePic: data.secure_url });
                 location.reload();
-            } catch (err) { alert("Upload failed!"); }
+            } catch (err) { alert("Upload failed!"); document.getElementById('action-loader').style.display = 'none'; }
         };
     </script>
 </body>
