@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Signup - ChatUp</title>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --bg-dark: #050508;
+            --glass: rgba(255, 255, 255, 0.08);
+            --error: #ff4b2b;
+            --success: #00ff88;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-dark); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+
+        .signup-card {
+            width: 100%; max-width: 400px; background: var(--glass);
+            padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(25px); text-align: center;
+        }
+
+        h2 { margin-bottom: 25px; font-weight: 800; letter-spacing: 1px; color: var(--primary); text-transform: uppercase; }
+
+        .input-group { position: relative; margin-bottom: 15px; text-align: left; }
+        
+        input {
+            width: 100%; padding: 12px 15px; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            color: white; outline: none; transition: 0.3s; font-size: 16px;
+        }
+
+        input:focus { border-color: var(--primary); background: rgba(255,255,255,0.1); }
+
+        /* Inline Send Buttons */
+        .inline-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: var(--primary); color: #000; border: none; padding: 5px 12px;
+            border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+        }
+
+        /* Password Eye Styling */
+        .eye-icon {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; color: var(--primary); /* UI Color Set */
+            display: flex; align-items: center;
+        }
+
+        #user-status { font-size: 0.7rem; margin-top: 4px; display: none; }
+
+        .btn-primary {
+            width: 100%; padding: 14px; background: linear-gradient(45deg, var(--primary), #4facfe);
+            border: none; border-radius: 12px; color: #000; font-weight: 800;
+            cursor: pointer; transition: 0.3s; margin-top: 20px; text-transform: uppercase;
+        }
+
+        .btn-primary:active { transform: scale(0.96); }
+
+        .otp-section {
+            margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="signup-card">
+        <h2>Create Account</h2>
+        
+        <div class="input-group">
+            <input type="text" id="public-name" placeholder="Public Name">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Username" 
+            oninput="this.value = this.value.replace(/[^a-z0-9_]/g, ''); handleUsernameCheck(this.value)">
+            <div id="user-status">Checking...</div>
+        </div>
+
+        <div class="input-group">
+            <input type="email" id="email" placeholder="Email Address">
+            <button class="inline-btn" onclick="sendOTP('email')">SEND</button>
+        </div>
+
+        <div class="input-group">
+            <input type="tel" id="mobile" placeholder="Mobile Number" maxlength="10" 
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            <button class="inline-btn" onclick="sendOTP('mobile')">SEND</button>
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Create Password">
+            <div class="eye-icon" onclick="togglePass()">
+                <svg id="eye-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </div>
+        </div>
+
+        <div class="otp-section">
+            <div class="input-group">
+                <input type="text" id="otp-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="text-align: center; letter-spacing: 4px;">
+            </div>
+            <button class="btn-primary" onclick="validateAndSignup()">Create Account</button>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 0.85rem; opacity: 0.5;">Already have an account? <a href="login.html" style="color: var(--primary); text-decoration: none;">Login</a></p>
+    </div>
+
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Toggle Password Visibility
+        window.togglePass = () => {
+            const passInput = document.getElementById('password');
+            passInput.type = passInput.type === 'password' ? 'text' : 'password';
+        };
+
+        // Unique Username Logic
+        window.handleUsernameCheck = async (username) => {
+            const status = document.getElementById('user-status');
+            if(username.length < 3) { status.style.display='none'; return; }
+            status.style.display = 'block'; status.innerText = "Checking...";
+            const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+            const snap = await getDocs(q);
+            if(!snap.empty) { status.innerText = "Taken ❌"; status.style.color = "#ff4b2b"; }
+            else { status.innerText = "Available ✅"; status.style.color = "#00ff88"; }
+        };
+
+        // OTP Send Placeholder
+        window.sendOTP = (type) => {
+            const val = type === 'email' ? document.getElementById('email').value : document.getElementById('mobile').value;
+            if(!val) { alert(`Please enter ${type}`); return; }
+            alert(`OTP Sent to your ${type}!`);
+        };
+
+        // Final Signup Process
+        window.validateAndSignup = () => {
+            const otp = document.getElementById('otp-input').value;
+            if(otp.length === 6) {
+                alert("Account Created! Welcome to ChatUp.");
+                location.href = 'dashboard.html';
+            } else {
+                alert("Please enter valid 6-digit OTP");
+            }
+        };
+
+        // Keyboard Enter Support
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') validateAndSignup();
+        });
+    </script>
+</body>
+</html>

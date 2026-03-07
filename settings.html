@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ChatUp - Settings</title>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --danger: #ff4b5c;
+            --bg-dark: #050508;
+            --glass: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: white; min-height: 100vh; overflow-x: hidden; }
+
+        /* --- LOADER --- */
+        #action-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .loader-backdrop { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- HEADER --- */
+        .settings-header {
+            padding: 20px; display: flex; align-items: center; gap: 15px;
+            background: rgba(10,10,15,0.8); backdrop-filter: blur(20px);
+            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border);
+        }
+        .back-btn { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; }
+
+        /* --- LISTS --- */
+        .settings-list { padding: 10px 0; }
+        .setting-group { border-bottom: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
+        .setting-item { display: flex; align-items: center; padding: 18px 20px; gap: 18px; transition: 0.3s; cursor: pointer; }
+        .setting-item:active { background: rgba(255,255,255,0.08); transform: scale(0.98); }
+
+        .icon-box {
+            width: 42px; height: 42px; background: var(--glass); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary); border: 1px solid var(--border);
+        }
+
+        .text-box { flex: 1; }
+        .text-box h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 2px; }
+        .text-box p { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+
+        /* --- ACCORDION --- */
+        .options-content {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255,255,255,0.01);
+        }
+        .setting-group.active .options-content { max-height: 300px; padding-bottom: 10px; }
+        .sub-option { padding: 14px 20px 14px 75px; font-size: 0.85rem; color: rgba(255,255,255,0.7); display: flex; justify-content: space-between; align-items: center; }
+        
+        .chevron { transition: 0.3s; opacity: 0.3; }
+        .setting-group.active .chevron { transform: rotate(90deg); opacity: 1; color: var(--primary); }
+
+        /* --- SUB-PAGES --- */
+        .sub-page { 
+            position: fixed; top: 0; left: 100%; width: 100%; height: 100%; 
+            background: var(--bg-dark); z-index: 2000; 
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px;
+            display: flex; flex-direction: column;
+        }
+        .sub-page.active { left: 0; }
+        .sub-content { flex: 1; }
+        .sub-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .sub-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .list-container { background: var(--glass); border-radius: 20px; border: 1px solid var(--border); padding: 15px; }
+        
+        /* --- CHAT SELECTION --- */
+        .chat-select-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .chat-select-item:last-child { border: none; }
+        input[type="checkbox"].chat-check { width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer; }
+
+        /* --- TOGGLE SWITCH --- */
+        .toggle-switch {
+            appearance: none; width: 40px; height: 20px; background: rgba(255,255,255,0.1);
+            border-radius: 20px; position: relative; cursor: pointer; transition: 0.3s;
+        }
+        .toggle-switch:checked { background: var(--primary); }
+        .toggle-switch::before {
+            content: ''; position: absolute; width: 16px; height: 16px; background: white;
+            border-radius: 50%; top: 2px; left: 2px; transition: 0.3s;
+        }
+        .toggle-switch:checked::before { left: 22px; }
+
+        .save-btn-sub { padding: 16px; border-radius: 15px; text-align: center; font-weight: 800; width: 100%; transition: 0.2s; margin-top: 20px; }
+        #delete-modal { left: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); opacity: 0; z-index: 5000; }
+        
+        .action-btn-back { background: var(--glass); color: var(--primary); padding: 16px; border-radius: 18px; text-align: center; font-weight: 800; border: 1px solid var(--border); margin: 20px; }
+        
+        /* FOOTER STYLE */
+        .settings-footer { text-align: center; padding: 30px 20px; font-size: 0.7rem; color: rgba(255,255,255,0.2); letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+        
+        .clickable { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="action-loader">
+        <div class="loader-backdrop"></div>
+        <div style="position:relative; text-align:center;">
+            <div class="spinner"></div>
+            <p id="loader-msg">Processing...</p>
+        </div>
+    </div>
+
+    <div class="settings-header">
+        <div class="back-btn clickable" onclick="location.href='dashboard.html'">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <h2>Settings</h2>
+    </div>
+
+    <div class="settings-list">
+        <div class="setting-group">
+            <div class="setting-item clickable" onclick="toggleSection(this)">
+                <div class="icon-box"><svg viewBox="0 0 24 24" fill="currentColor" width="22"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+                <div class="text-box"><h4>Privacy</h4><p>Blocked users, Hide chats</p></div>
+                <div class="chevron"><svg viewBox="0 0 24 24" fill="currentColor" width="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></div>
+            </div>
+            <div class="options-content">
+                <div class="sub-option clickable" onclick="openSubPage('page-blocked')">Blocked Users <span>›</span></div>
+                <div class="sub-option clickable" onclick="openSubPage('page-hide')">Hide Chats <span>›</span></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item clickable" onclick="toggleSection(this)">
+                <div class="icon-box"><svg viewBox="0 0 24 24" fill="currentColor" width="22"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+                <div class="text-box"><h4>Manage Chats</h4><p>Clear chat, Archive chat</p></div>
+                <div class="chevron"><svg viewBox="0 0 24 24" fill="currentColor" width="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></div>
+            </div>
+            <div class="options-content">
+                <div class="sub-option clickable" onclick="openChatManage('Clear')">Clear Chat <span>›</span></div>
+                <div class="sub-option clickable" onclick="openChatManage('Archive')">Archive Chat <span>›</span></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item clickable" onclick="toggleSection(this)">
+                <div class="icon-box"><svg viewBox="0 0 24 24" fill="currentColor" width="22"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
+                <div class="text-box"><h4>Notifications</h4><p>Message & Group tones</p></div>
+                <div class="chevron"><svg viewBox="0 0 24 24" fill="currentColor" width="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></div>
+            </div>
+            <div class="options-content">
+                <div class="sub-option clickable" onclick="openSubPage('page-notif-private')">Conversation Tones <span>›</span></div>
+                <div class="sub-option clickable" onclick="openSubPage('page-notif-group')">Group Notifications <span>›</span></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item clickable" onclick="toggleSection(this)">
+                <div class="icon-box"><svg viewBox="0 0 24 24" fill="currentColor" width="22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg></div>
+                <div class="text-box"><h4>Account Center</h4><p>Number, Email, Delete</p></div>
+                <div class="chevron"><svg viewBox="0 0 24 24" fill="currentColor" width="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></div>
+            </div>
+            <div class="options-content">
+                <div class="sub-option clickable" onclick="openSubPage('page-account', 'Verify Number')">Change/Verify Number <span>›</span></div>
+                <div class="sub-option clickable" onclick="openSubPage('page-account', 'Verify Email')">Change/Verify Email <span>›</span></div>
+                <div class="sub-option clickable" style="color:var(--danger)" onclick="openDeleteModal()">Delete Account <span>›</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-btn-back clickable" onclick="location.href='dashboard.html'">Back to Dashboard</div>
+    <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+
+    <div id="page-manage-chats" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-manage-chats')">←</div><div class="sub-title" id="manage-title">Manage Chats</div></div>
+            <div id="selection-header" style="display: none; justify-content: space-between; margin-bottom: 15px;"><span style="opacity:0.6">Select Chats</span><div class="clickable" onclick="selectAll(this)" style="color:var(--primary); font-weight:700">Select All</div></div>
+            <div class="list-container" id="chat-list-container"><div id="empty-chats-msg" style="text-align:center; padding: 40px 0; color:rgba(255,255,255,0.2); font-size:0.9rem;">No chats found to manage.</div></div>
+            <div id="manage-btn" class="save-btn-sub clickable" style="background:var(--primary); color:#000; display: none;" onclick="processChatAction()">Confirm Action</div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="page-notif-private" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-notif-private')">←</div><div class="sub-title">Conversation Tones</div></div>
+            <div class="list-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;"><span>Mute Notifications</span><input type="checkbox" class="toggle-switch"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border);"><span>Vibrate on Message</span><input type="checkbox" checked class="toggle-switch"></div>
+            </div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="page-notif-group" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-notif-group')">←</div><div class="sub-title">Group Notifications</div></div>
+            <div class="list-container">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;"><span>Mute All Groups</span><input type="checkbox" class="toggle-switch"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border);"><span>Group Mentions</span><input type="checkbox" checked class="toggle-switch"></div>
+            </div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="page-account" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-account')">←</div><div class="sub-title" id="acc-title">Account</div></div>
+            <input type="text" class="input-box-sub" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:16px; border-radius:15px; color:white; outline:none;" placeholder="Enter details...">
+            <div class="save-btn-sub clickable" style="background:var(--primary); color:#000;" onclick="triggerAction('Updating...')">Update</div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="page-blocked" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-blocked')">←</div><div class="sub-title">Blocked Users</div></div>
+            <div class="list-container" style="text-align:center; opacity:0.3;">No blocked users found.</div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="page-hide" class="sub-page">
+        <div class="sub-content">
+            <div class="sub-header"><div class="back-btn clickable" onclick="closeSubPage('page-hide')">←</div><div class="sub-title">Hidden Chats</div></div>
+            <div class="list-container" style="text-align:center; opacity:0.3;">No hidden chats.</div>
+        </div>
+        <div class="settings-footer">CHAT UP WITH YOUR FRIENDS</div>
+    </div>
+
+    <div id="delete-modal" class="sub-page" style="display: none; opacity: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); left: 0;">
+        <div class="list-container" style="width: 85%; max-width: 320px; text-align: center; border-radius: 25px;">
+            <div style="color:var(--danger); font-size:2.5rem; margin-bottom:15px;">🗑️</div>
+            <h3 style="margin-bottom:8px;">Delete your account?</h3>
+            <p style="font-size:0.8rem; opacity:0.5; margin-bottom:25px;">This action is permanent and cannot be undone.</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="save-btn-sub clickable" style="background:var(--danger); color:white;" onclick="triggerAction('Deleting...')">Delete</div>
+                <div class="save-btn-sub clickable" style="background:rgba(0,242,254,0.1); color:var(--primary); border:1px solid var(--primary);" onclick="closeDeleteModal()">Cancel</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentManage = "";
+        function toggleSection(e) {
+            const g = e.parentElement;
+            const active = g.classList.contains('active');
+            document.querySelectorAll('.setting-group').forEach(i => i.classList.remove('active'));
+            if (!active) g.classList.add('active');
+        }
+        function openSubPage(id, t="") { if(t) document.getElementById('acc-title').innerText = t; document.getElementById(id).classList.add('active'); }
+        function closeSubPage(id) { document.getElementById(id).classList.remove('active'); }
+        function openChatManage(action) {
+            currentManage = action;
+            document.getElementById('manage-title').innerText = action + " Chats";
+            document.getElementById('manage-btn').innerText = "Confirm " + action;
+            document.getElementById('page-manage-chats').classList.add('active');
+        }
+        function triggerAction(msg) {
+            document.getElementById('loader-msg').innerText = msg;
+            document.getElementById('action-loader').style.display = 'flex';
+            setTimeout(() => { 
+                document.getElementById('action-loader').style.display = 'none'; 
+                if(msg.includes('Deleting')) location.href='index.html'; 
+            }, 1500);
+        }
+        function openDeleteModal() { const m = document.getElementById('delete-modal'); m.style.display = 'flex'; setTimeout(() => m.style.opacity = '1', 10); }
+        function closeDeleteModal() { const m = document.getElementById('delete-modal'); m.style.opacity = '0'; setTimeout(() => m.style.display = 'none', 300); }
+    </script>
+</body>
+</html>
