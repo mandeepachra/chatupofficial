@@ -1,16 +1,21 @@
 {
-  "name": "ChatUp Messenger",
   "short_name": "ChatUp",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#0f0c29",
-  "theme_color": "#0f0c29",
-  "orientation": "portrait",
+  "name": "ChatUp - Premium Messenger",
+  "description": "Premium real-time chatting app",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/733/733585.png",
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "start_url": "/chatupfinal/index.html",
+  "display": "standalone",
+  "theme_color": "#020617",
+  "background_color": "#020617"
 }

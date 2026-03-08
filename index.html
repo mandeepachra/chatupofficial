@@ -1,105 +1,325 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChatUp - Login</title>
+    <title>ChatUp | Pro Messenger</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --primary: #00f2fe;
-            --bg-dark: #050508;
-            --glass: rgba(255, 255, 255, 0.08);
-            --border: rgba(255, 255, 255, 0.1);
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; margin: 0; height: 100vh; overflow: hidden; }
+        .app-grid { display: grid; grid-template-columns: 350px 1fr 300px; height: 100vh; width: 100vw; }
+        @media (max-width: 1024px) {
+            .app-grid { grid-template-columns: 1fr; }
+            .desktop-only { display: none; }
+            .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: #0f172a; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }
+            .content-section { height: calc(100vh - 80px); }
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-dark); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-
-        .login-card { 
-            background: var(--glass); 
-            border: 1px solid var(--border); 
-            padding: 40px 30px; 
-            border-radius: 30px; 
-            width: 100%; 
-            max-width: 400px; 
-            backdrop-filter: blur(20px);
-            text-align: center;
-        }
-
-        .logo { font-size: 2.5rem; font-weight: 900; background: linear-gradient(45deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-        p.subtitle { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; }
-
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; font-size: 0.7rem; color: var(--primary); margin-bottom: 5px; font-weight: 700; margin-left: 10px; }
-        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 1rem; }
-        input:focus { border-color: var(--primary); }
-
-        .btn { width: 100%; padding: 16px; border-radius: 18px; border: none; background: var(--primary); color: #000; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn:active { transform: scale(0.96); }
-
-        .footer-link { margin-top: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.5); }
-        .footer-link a { color: var(--primary); text-decoration: none; font-weight: 700; }
-
-        #loader { display: none; margin-top: 15px; color: var(--primary); font-size: 0.8rem; font-weight: 600; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); border-right: 1px solid rgba(255,255,255,0.05); }
+        .tab-panel { display: none; height: 100%; flex-direction: column; }
+        .tab-active { display: flex; }
+        #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .letter { font-size: 3rem; font-weight: 800; font-style: italic; opacity: 0; transform: translateY(20px); animation: fadeUp 0.5s forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        .chat-me { background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 20px 20px 4px 20px; align-self: flex-end; position: relative; }
+        .chat-them { background: #1e293b; border-radius: 20px 20px 20px 4px; align-self: flex-start; position: relative; }
+        .deleted-msg { font-style: italic; opacity: 0.6; font-size: 12px !important; }
+        .tick-gray { color: #94a3b8; }
+        .tick-blue { color: #4ade80; }
+        #msg-menu { position: fixed; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; display: none; z-index: 500; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        #msg-menu button { width: 100%; padding: 12px 20px; text-align: left; font-size: 13px; font-weight: 600; transition: 0.2s; }
+        #msg-menu button:hover { background: rgba(255,255,255,0.05); }
     </style>
 </head>
-<body>
-
-    <div class="login-card">
-        <div class="logo">CHATUP</div>
-        <p class="subtitle">Log in to continue chatting</p>
-
-        <div class="input-group">
-            <label>EMAIL</label>
-            <input type="email" id="email" placeholder="example@mail.com">
-        </div>
-
-        <div class="input-group">
-            <label>PASSWORD</label>
-            <input type="password" id="password" placeholder="••••••••">
-        </div>
-
-        <button class="btn" id="loginBtn">Login Now</button>
-        <div id="loader">Checking credentials...</div>
-
-        <div class="footer-link">
-            New here? <a href="./signup.html">Create an account</a>
+<body onclick="hideMenu()">
+    <div id="loading-overlay">
+        <div class="flex flex-col items-center">
+            <img src="logo.png" class="w-20 h-20 mb-4 animate-pulse">
+            <div><span class="letter" style="animation-delay:0.1s">C</span><span class="letter" style="animation-delay:0.2s">H</span><span class="letter" style="animation-delay:0.3s">A</span><span class="letter" style="animation-delay:0.4s">T</span><span class="letter" style="animation-delay:0.5s">&nbsp;</span><span class="letter" style="animation-delay:0.6s">U</span><span class="letter" style="animation-delay:0.7s">P</span></div>
         </div>
     </div>
 
+    <div id="msg-menu">
+        <button onclick="deleteMsg('me')" class="text-white">Delete for me</button>
+        <button id="del-everyone" onclick="deleteMsg('everyone')" class="text-red-400 border-t border-white/5">Delete for everyone</button>
+    </div>
+
+    <div id="auth-screen" class="fixed inset-0 z-[2000] bg-[#020617] flex items-center justify-center p-6">
+        <div class="max-w-md w-full p-10 rounded-[2.5rem] bg-white/5 border border-white/10 text-center">
+            <h1 class="text-4xl font-black text-blue-500 italic mb-2">CHAT UP</h1>
+            <p id="auth-tag" class="text-gray-400 mb-10 text-sm">chat up with your friend</p>
+            <div id="signup-extra" class="hidden">
+                <input id="reg-username" type="text" placeholder="username" class="w-full p-4 mb-4 bg-white/5 rounded-2xl border border-white/10 outline-none">
+                <input id="reg-public" type="text" placeholder="Public Name" class="w-full p-4 mb-4 bg-white/5 rounded-2xl border border-white/10 outline-none">
+            </div>
+            <input id="auth-email" type="email" placeholder="Email" class="w-full p-4 mb-4 bg-white/5 rounded-2xl border border-white/10 outline-none">
+            <input id="auth-pwd" type="password" placeholder="Password" class="w-full p-4 mb-8 bg-white/5 rounded-2xl border border-white/10 outline-none">
+            <button onclick="handleAuth()" id="auth-btn" class="w-full bg-blue-600 p-5 rounded-2xl font-bold">Sign In</button>
+            <p onclick="toggleAuth()" id="toggle-text" class="mt-6 text-gray-500 cursor-pointer text-xs font-bold underline">already have an account? login</p>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden app-grid">
+        <aside class="glass flex flex-col content-section">
+            <div class="p-8 flex justify-between items-center">
+                <div class="flex items-center gap-2"><img src="logo.png" class="w-8 h-8"><h1 class="text-2xl font-black italic text-blue-500">CHATUP</h1></div>
+                <div class="relative cursor-pointer" onclick="switchTab('notif')"><i data-lucide="bell" class="text-gray-400"></i><span id="notif-dot" class="hidden absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span></div>
+            </div>
+            <div class="px-6 mb-4"><input id="search-input" onkeyup="searchUser()" type="text" placeholder="Search people..." class="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-xs outline-none"></div>
+            <div class="flex-1 overflow-y-auto px-4">
+                <div id="tab-home" class="tab-panel tab-active space-y-2"></div>
+                <div id="tab-add" class="tab-panel space-y-4"><div id="search-results" class="space-y-3"></div></div>
+                <div id="tab-notif" class="tab-panel space-y-4"><div id="notif-list" class="space-y-3"></div></div>
+                <div id="tab-settings" class="tab-panel p-4 bg-white/5 rounded-3xl border border-white/10">
+                    <h3 class="font-bold mb-4">Edit Profile</h3>
+                    <input id="edit-username" type="text" placeholder="Username" class="w-full bg-transparent border-b border-white/20 py-2 mb-4 outline-none text-blue-400">
+                    <input id="edit-name" type="text" placeholder="Public Name" class="w-full bg-transparent border-b border-white/20 py-2 mb-4 outline-none">
+                    <textarea id="edit-bio" placeholder="Bio" class="w-full bg-transparent border-b border-white/20 py-2 outline-none" rows="2"></textarea>
+                    <button onclick="updateProfile()" class="mt-6 w-full bg-blue-600 p-3 rounded-xl font-bold text-sm">Save Changes</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex flex-col relative bg-[#020617] content-section">
+            <div id="empty-view" class="flex-1 flex flex-col items-center justify-center opacity-10"><i data-lucide="message-square" class="w-32 h-32 mb-4"></i><p class="text-xl font-bold uppercase">Select a chat</p></div>
+            <div id="chat-view" class="hidden h-full flex flex-col">
+                <header class="p-6 border-b border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-4"><div id="ch-avatar" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold">?</div><h2 id="ch-name" class="font-bold text-sm">---</h2></div>
+                    <button onclick="deleteFullChat()" class="text-red-500 opacity-50 hover:opacity-100"><i data-lucide="trash-2" size="20"></i></button>
+                </header>
+                <div id="chat-container" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4"></div>
+                <div class="p-6 flex items-center gap-4 bg-white/5 m-4 rounded-2xl border border-white/10">
+                    <input id="chat-input" type="text" placeholder="Message..." class="flex-1 bg-transparent p-4 outline-none text-sm">
+                    <button onclick="sendMsg()" class="bg-blue-600 p-4 rounded-xl shadow-lg"><i data-lucide="send"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <aside class="glass desktop-only flex flex-col items-center p-10 text-center">
+            <div id="my-pfp" class="w-24 h-24 rounded-3xl bg-blue-600 flex items-center justify-center text-4xl font-black mb-4">?</div>
+            <h2 id="my-n" class="text-xl font-bold mb-1">---</h2>
+            <p id="my-u" class="text-blue-500 text-xs font-bold mb-10">@---</p>
+            <button onclick="logout()" class="mt-auto w-full bg-red-500/10 text-red-500 p-4 rounded-2xl font-bold text-xs">Logout</button>
+        </aside>
+
+        <nav class="mobile-nav flex justify-around items-center">
+            <button onclick="switchTab('home')" id="m-home" class="text-blue-500"><i data-lucide="home"></i></button>
+            <button onclick="switchTab('add')" id="m-add" class="text-gray-500"><i data-lucide="user-plus"></i></button>
+            <button onclick="switchTab('notif')" id="m-notif" class="text-gray-500"><i data-lucide="bell"></i></button>
+            <button onclick="switchTab('settings')" id="m-settings" class="text-gray-500"><i data-lucide="settings"></i></button>
+        </nav>
+    </div>
+
     <script type="module">
-        import { auth } from './firebase-config.js';
-        import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, onSnapshot, deleteDoc, addDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const btn = document.getElementById('loginBtn');
-        const loader = document.getElementById('loader');
+       // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA-ZwKwFb9HGdOeViJDEM8MZ-Gkee8OP6A",
+  authDomain: "chatup01.firebaseapp.com",
+  projectId: "chatup01",
+  storageBucket: "chatup01.firebasestorage.app",
+  messagingSenderId: "465233070635",
+  appId: "1:465233070635:web:78f98107dc2d22dfe0386e",
+  measurementId: "G-3Y0BKT2RFD"
+};
 
-        // Check if user is already logged in
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.location.replace('./dashboard.html');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Service Worker path updated for GitHub Pages
+        if ('serviceWorker' in navigator) { 
+            navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log("Service Worker Registered"))
+            .catch(err => console.log("SW Register Error:", err)); 
+            Notification.requestPermission();
+        }
+
+        window.showPush = (t, b) => {
+            if (Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(t, { body: b, icon: 'logo.png', badge: 'logo.png', vibrate: [200, 100, 200] });
+                });
+            }
+        };
+
+        let currentUser = null, targetId = null, unsubMessages = null, selectedMsgId = null, isLogin = true;
+
+        window.showMsgMenu = (e, msgId, sender) => {
+            e.preventDefault();
+            selectedMsgId = msgId;
+            const menu = document.getElementById('msg-menu');
+            const delEv = document.getElementById('del-everyone');
+            delEv.style.display = sender === auth.currentUser.uid ? 'block' : 'none';
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+        };
+
+        window.hideMenu = () => document.getElementById('msg-menu').style.display = 'none';
+
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-dashboard').classList.remove('hidden');
+                const d = (await getDoc(doc(db, "users", user.uid))).data();
+                currentUser = d;
+                document.getElementById('my-pfp').innerText = d.publicName[0];
+                document.getElementById('my-n').innerText = d.publicName;
+                document.getElementById('my-u').innerText = "@" + d.username;
+                document.getElementById('edit-username').value = d.username;
+                document.getElementById('edit-name').value = d.publicName;
+                document.getElementById('edit-bio').value = d.bio || "";
+                listenRequests(); listenFriends();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('main-dashboard').classList.add('hidden');
             }
         });
 
-        btn.onclick = async () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-
-            if(!email || !pass) return alert("Please fill all fields!");
-
-            btn.disabled = true;
-            loader.style.display = 'block';
-
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                // Redirect on success
-                window.location.replace('./dashboard.html');
-            } catch (err) {
-                alert("Login Failed: " + err.message);
-                btn.disabled = false;
-                loader.style.display = 'none';
+        window.searchUser = async () => {
+            const t = document.getElementById('search-input').value.toLowerCase().trim();
+            if(!t) { switchTab('home'); return; }
+            switchTab('add');
+            const q = query(collection(db, "users"), where("username", "==", t));
+            const snap = await getDocs(q);
+            const box = document.getElementById('search-results');
+            box.innerHTML = snap.empty ? "<p class='text-center opacity-30 text-xs'>Not found</p>" : "";
+            
+            for (const u of snap.docs) {
+                const d = u.data(); if(d.uid === auth.currentUser.uid) continue;
+                const isFriend = currentUser.friends && currentUser.friends.includes(d.uid);
+                const rCheck = await getDoc(doc(db, "requests", d.uid + "_" + auth.currentUser.uid));
+                
+                let action = isFriend ? '<span class="text-[10px] text-green-500 font-bold uppercase tracking-widest">Already Friends</span>' : 
+                             rCheck.exists() ? '<span class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest">Request Pending</span>' : 
+                             `<button onclick="sendRequest('${d.uid}')" class="text-blue-500 transition-transform hover:scale-110"><i data-lucide="user-plus" size="18"></i></button>`;
+                
+                box.innerHTML += `<div class="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5 animate-fade-in"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs shadow-lg">${d.publicName[0]}</div><div><p class="font-bold text-xs">${d.publicName}</p><p class="text-[10px] opacity-30">@${d.username}</p></div></div><div>${action}</div></div>`;
             }
+            lucide.createIcons();
         };
+
+        window.sendRequest = async (id) => {
+            await setDoc(doc(db, "requests", id + "_" + auth.currentUser.uid), { to: id, from: auth.currentUser.uid, fromName: currentUser.publicName, status: "pending" });
+            alert("Sent!");
+        };
+
+        function listenRequests() {
+            onSnapshot(query(collection(db, "requests"), where("to", "==", auth.currentUser.uid)), (snap) => {
+                const list = document.getElementById('notif-list'), dot = document.getElementById('notif-dot');
+                if(!snap.empty) { dot.classList.remove('hidden'); showPush("ChatUp", "New friend request!"); }
+                list.innerHTML = snap.empty ? "<p class='text-center opacity-20 text-xs mt-10'>No requests</p>" : "";
+                snap.forEach(d => {
+                    const r = d.data();
+                    list.innerHTML += `<div class="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/10"><p class="text-xs font-bold">${r.fromName}</p><div class="flex gap-2"><button onclick="acceptReq('${d.id}', '${r.from}')" class="bg-blue-600 p-2 rounded-lg"><i data-lucide="check" size="14"></i></button><button onclick="deleteDoc(doc(db, 'requests', '${d.id}'))" class="bg-white/10 p-2 rounded-lg text-red-500"><i data-lucide="x" size="14"></i></button></div></div>`;
+                });
+                lucide.createIcons();
+            });
+        }
+
+        window.acceptReq = async (rid, fid) => {
+            const mRef = doc(db, "users", auth.currentUser.uid), fRef = doc(db, "users", fid);
+            const mD = (await getDoc(mRef)).data(), fD = (await getDoc(fRef)).data();
+            await updateDoc(mRef, { friends: [...(mD.friends || []), fid] });
+            await updateDoc(fRef, { friends: [...(fD.friends || []), auth.currentUser.uid] });
+            await deleteDoc(doc(db, "requests", rid));
+        };
+
+        function listenFriends() {
+            onSnapshot(doc(db, "users", auth.currentUser.uid), async (snap) => {
+                const fids = snap.data().friends || [], list = document.getElementById('tab-home');
+                list.innerHTML = fids.length === 0 ? '<div class="h-64 flex flex-col items-center justify-center opacity-20"><i data-lucide="message-circle" class="w-16 h-16 mb-4"></i><p class="font-bold text-xs uppercase">No Chats</p></div>' : "";
+                for(let fid of fids) {
+                    const d = (await getDoc(doc(db, "users", fid))).data();
+                    list.innerHTML += `<div onclick="openChat('${fid}', '${d.publicName}')" class="p-4 rounded-2xl flex items-center gap-4 hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/5 transition-all"><div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center font-bold text-blue-500">${d.publicName[0]}</div><div class="flex-1"><h4 class="font-bold text-sm">${d.publicName}</h4><p class="text-[10px] opacity-30 italic">Click to message</p></div></div>`;
+                }
+                lucide.createIcons();
+            });
+        }
+
+        window.openChat = (fid, fname) => {
+            targetId = fid; if(unsubMessages) unsubMessages();
+            document.getElementById('empty-view').classList.add('hidden'); document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('ch-name').innerText = fname; document.getElementById('ch-avatar').innerText = fname[0];
+            const cid = [auth.currentUser.uid, fid].sort().join("_");
+            
+            unsubMessages = onSnapshot(query(collection(db, "messages", cid, "log"), orderBy("time", "asc")), (snap) => {
+                const box = document.getElementById('chat-container'); box.innerHTML = "";
+                snap.forEach(m => {
+                    const d = m.data();
+                    const isMe = d.sender === auth.currentUser.uid;
+                    if(!isMe && d.status !== 'read') updateDoc(doc(db, "messages", cid, "log", m.id), { status: 'read' });
+                    if(!isMe && (Date.now() - d.time?.toMillis() < 2000)) showPush(fname, d.text);
+                    if(d.deletedBy && d.deletedBy.includes(auth.currentUser.uid)) return;
+                    let content = d.isDeleted ? `<span class="deleted-msg"><i data-lucide="ban" class="inline w-3 mr-1"></i> Deleted</span>` : d.text;
+                    let ticks = isMe && !d.isDeleted ? `<span class="ml-2">${d.status === 'read' ? '<i data-lucide="check-check" class="tick-blue w-3 h-3"></i>' : '<i data-lucide="check" class="tick-gray w-3 h-3"></i>'}</span>` : '';
+                    box.innerHTML += `<div oncontextmenu="showMsgMenu(event, '${m.id}', '${d.sender}')" class="p-3 max-w-[80%] text-sm font-medium ${isMe ? 'chat-me' : 'chat-them'} flex items-end"><span class="break-all">${content}</span>${ticks}</div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+                lucide.createIcons();
+            });
+        };
+
+        window.sendMsg = async () => {
+            const t = document.getElementById('chat-input').value.trim(); if(!t || !targetId) return;
+            const cid = [auth.currentUser.uid, targetId].sort().join("_"); document.getElementById('chat-input').value = "";
+            await addDoc(collection(db, "messages", cid, "log"), { text: t, sender: auth.currentUser.uid, time: serverTimestamp(), status: 'sent', isDeleted: false });
+        };
+
+        window.deleteMsg = async (type) => {
+            const cid = [auth.currentUser.uid, targetId].sort().join("_");
+            const ref = doc(db, "messages", cid, "log", selectedMsgId);
+            if(type === 'everyone') await updateDoc(ref, { isDeleted: true });
+            else {
+                const d = (await getDoc(ref)).data();
+                await updateDoc(ref, { deletedBy: [...(d.deletedBy || []), auth.currentUser.uid] });
+            }
+            hideMenu();
+        };
+
+        window.deleteFullChat = async () => {
+            if(!confirm("Delete this conversation?")) return;
+            const cid = [auth.currentUser.uid, targetId].sort().join("_");
+            const msgs = await getDocs(collection(db, "messages", cid, "log"));
+            msgs.forEach(async (m) => {
+                const d = m.data();
+                await updateDoc(doc(db, "messages", cid, "log", m.id), { deletedBy: [...(d.deletedBy || []), auth.currentUser.uid] });
+            });
+            document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('empty-view').classList.remove('hidden');
+        };
+
+        window.updateProfile = async () => {
+            const u = document.getElementById('edit-username').value.toLowerCase().trim();
+            const n = document.getElementById('edit-name').value, b = document.getElementById('edit-bio').value;
+            if(u.includes(" ")) return alert("No spaces in username!");
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { username: u, publicName: n, bio: b });
+            alert("Updated!"); location.reload();
+        };
+
+        window.handleAuth = async () => {
+            const email = document.getElementById('auth-email').value, pwd = document.getElementById('auth-pwd').value;
+            try {
+                if(isLogin) await signInWithEmailAndPassword(auth, email, pwd);
+                else {
+                    const u = document.getElementById('reg-username').value.toLowerCase().trim(), n = document.getElementById('reg-public').value.trim();
+                    const res = await createUserWithEmailAndPassword(auth, email, pwd);
+                    await setDoc(doc(db, "users", res.user.uid), { uid: res.user.uid, username: u, publicName: n, email, bio: "Available", friends: [] });
+                }
+            } catch(e) { alert(e.message); }
+        };
+
+        window.toggleAuth = () => { isLogin = !isLogin; document.getElementById('signup-extra').classList.toggle('hidden'); document.getElementById('auth-btn').innerText = isLogin ? 'Sign In' : 'Join ChatUp'; };
+        window.switchTab = (t) => { document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('tab-active')); document.getElementById('tab-' + t).classList.add('tab-active'); lucide.createIcons(); };
+        window.logout = () => { signOut(auth); location.reload(); };
+        setTimeout(() => document.getElementById('loading-overlay').style.display='none', 1500);
+        lucide.createIcons();
     </script>
 </body>
 </html>
